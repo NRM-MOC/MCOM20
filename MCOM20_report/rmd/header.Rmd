@@ -1,0 +1,190 @@
+---
+title: "Appendix, The Swedish National Monitoring Programme for Contaminants in Marine Biota (until 2019 year’s data) - Temporal trends and spatial variations"
+author: "Anne L. Soerensen and Suzanne Faxneld"
+output:
+  rmarkdown::pdf_document:
+    keep_tex: true
+    fig_caption: yes        
+    includes:  
+      in_header: preamble-latex.tex
+bibliography: appendix.bib
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+library(MoCiS)
+library(knitr)
+library(ggmap)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(cowplot)
+library(rgeos)
+library(ggspatial)
+library(scales)
+library(sf)
+library(MoCiS.tools)
+order_figs <- function(file_names){
+ tibble(LOC = str_sub(file_names, 1, 4), file_names = file_names) %>% 
+    left_join(tibble(LOC = unique(statorder()$hav$loc),
+                     order = 1:29)) %>% 
+    arrange(order) %>% 
+    pull(file_names)
+}
+options(knitr.kable.NA = '')
+tabcap <- "Parameters concerning
+the whole time series: $n_{obs}$: number of observations; $n_y$: number  of sampled years; Years: time span of sampling; log-linear regression for the whole time period: Slope (95$\\%$ CI):
+annual percentage change with the 95 $\\%$ confidence interval; $R^2$: coefficient of determination; $p$: probability value; CV: coefficient of variation, LDT $\\%$: lowest detectable trend of the
+entire time series in percent based on the entire time series’ between-year variation at a power of 80$\\%$; YRQ: number of years required to detect an annual change of 10 $\\%$ at a power
+of 80$\\%$ considering the between-year variation of the entire time series; Pow$_{tot}$: the power to detect a 10 $\\%$ annual change over the total time series; Pow$_{10y}$: the power to detect a
+10$\\%$ annual change as if the years were 10; LDT$_{10y}$ $\\%$: lowest detectable trend (in percent per year) of the entire time series based on the last 10 years’ between-year variation at a
+power of 80$\\%$; Conc$_{pred}$ (95$\\%$ CI): the predicted concentration at the last sampling year based on the smoother line with the 95 $\\%$ confidence
+interval; parameters as above, but concerning the log-linear regression for the last ten years: (Slope (95$\\%$ CI), YRQ; Pow$_{tot}$, Pow$_{10y}$,  $R^{2}_{10y}$, $p_{10y}$); Yr$_{change}$:
+calendar year with a change point in the concentrations (from increasing to decreasing or vice versa)."
+```
+
+
+#	Statistical treatment
+
+## Data treatment
+
+With the exception described below, raw data as reported by the laboratories is used in analysis.
+
+### Values below LOQ
+
+Reported values below the LOQ are substituted by the value of the reported LOQ divided by the square root of 2. Historically, in cases where the information on the value of the LOQ might have been missing, the minimum value of the substance concentration during that year was taken instead of the LOQ in this calculation. 
+
+### Sum of PCBs
+
+The sum of PCBs is calculated as follows; up to 1988 it is based on a relationship between PCB-10 and total sum of PCBs, whereas after 1988 the sum is instead based on the relationship between both PCB-138+PCB-163 and PCB-10 and the total sum of PCBs.  
+
+### Intercalibration for metals prior to 2007
+
+
+Prior to 2007, metal analyses were carried out at the Department of Environmental Assessment at the Swedish University of Agricultural Sciences (SLU). Due to some inconsistencies in results, the results from the years 2003 up to 2006 should be looked upon with caution. From 2007, the analyses were carried out at the Department of Environmental Science and Analytical Chemistry (ACES), at Stockholm University (SU). 
+
+Prior to 2007, heavy metal concentrations, except mercury, in fish liver and blue mussel soft body were determined using an atomic absorption spectrophotometer with a graphite furnace at SLU. The quantification limit was estimated to approximately 100 ng/g dry weight for zinc; approximately 10 ng/g dry weight for lead and copper; approximately 5 ng/g dry weight for cadmium; and approximately 0.1 $\mu$/g dry weight for nickel and chromium, which implies that the concentrations in herring, flounder and dab are approximately 10–20 times above the quantification limit. The laboratory participated in the periodic QUASIMEME intercalibration rounds. 
+
+Since 2007, Stockholm University has determined heavy metal concentrations in fish liver and fish muscle (mercury), blue mussel soft body and bird eggs.
+
+Due to the change in laboratory and hence analytical methods, an intercalibration has been conducted to provide comparable results for the time series between laboratories. See @intercal_metals for details.
+
+Results from metal analysis have been compared between the laboratories. For herring  from Utlängan, Väderöarna and Fladen, cod from SE Gotland and Fladen and guillemot egg from St. Karlsö the same individuals have been compared. For blue mussel from Nidingen, perch from Kvädöfjärden and herring from Landsort the comparisons are made on samples from same catch but not the same individuals (due to lack of sufficient sample material). No intercalibration has been made for eelpout. 
+
+
+The metal concentrations analysed by SLU have, in the time series, been recalculated by the ratios between laboratories in cases where these were significantly separated from 1, presented in table 1, to make the SLU-data comparable with the results from Stockholm University. No comparison between the laboratories has been done for eelpout. No recalculation has been made for eelpout.
+
+```{r, results = "asis"}
+read_excel("interkalibrering metall.xlsx", skip = 1) %>% rename(' ' = ...1) %>% slice(1:7) %>% kable("latex", booktabs = TRUE, escape = FALSE,
+          caption = "Ratio between concentrations of metals analysed by SLU / concentrations of metals analysed by SU. If blank, no adjustment has been done.") %>%
+    kable_styling(latex_options = c("hold_position"))
+```
+
+
+
+##	Trend detection
+
+One of the main objectives of the monitoring programme is to detect statistical significant time trends. The detection of trends is carried out in four steps as follows below. 
+
+###	Log-linear regression analyses 
+
+The log-linear regression analyses are performed for data based on the entire investigated time period as well as for data from the most recent ten years. The rationale for additionally analysing data exclusively from the last ten years is to provide a more recent trend of the contaminant concentrations, because earlier decades’ concentrations might reflect a different trend, strongly affecting the trend of the entire time period.
+The slope of the regression line describes the annual percentage change. A slope of 5 % implies that the initial concentration is halved after 14 years, whereas a 10 % slope corresponds to a concentration reduction by half after 7 years.
+The log-linear model assumes that the residuals are independent of each other and evenly distributed, which means that the residuals for each year should be evenly (i.e. without any systematic trend) spread around zero. If this assumption is violated, statistical inferences can be erroneous. Since observations in time series data often exhibit autocorrelation (i.e. correlating residuals), a robust estimate of the variance matrix is being used which is consistent under autocorrelation and heteroscedasticity (i.e. non-constant variance of the residuals), see @zeileis_2004.
+
+
+###	Non-parametric trend test
+
+The regression analysis presumes (among other things) that the regression line gives a good description of the trend. The ’leverage effect’ of points lying at one end of the regression line is well-known. An exaggerated slope caused by a single or a few points lying towards one end of the line increases the risk of detecting a false significant trend in cases where no real trend exists. A non-parametric alternative to the regression analysis is the Mann-Kendall trend test [@gilbert_1987; @helsel_1992; @swertz_1995]. This test generally has a lower power than the regression analysis and does not take differences in the magnitude of concentrations into account. The Mann-Kendall trend test only counts the number of consecutive years during which the concentration increases or decreases compared to the year/s before. The eventual case that the regression analysis yields a significant result, but the Mann-Kendall test does not, could be explained by the lower power of the Mann-Kendall test, or alternatively a disproportionately large influence of points on the slope. Hence, the Kendall’s $\tau$, and the corresponding p-value are reported in the statistics tables in the Appendix. The Kendall’s $\tau$ ranges from 0 to 1, like the traditional correlation coefficient, Pearson’s $r$, but will generally be lower. Comparably strong linear correlations of 0.9 or above, correspond to a $\tau$-value of about 0.7 or above [@helsel_1992]. The Mann-Kendall test was recommended by the US EPA as a complementary trend test in water quality monitoring programmes when evaluating annual samples [@loftis_1989].
+
+###	Non-linear trend components 
+
+As an alternative to the regression line, smoothed lines can be used to describe the development of data over time. The smoother applied here is a locally estimated scatterplot smoother (LOESS). For each point, the LOESS fits a weighted linear model using a subset of points located close to the measured data point. The Generalized Cross Validation determines the value range that is considered as being close to the measured data point. With an analysis of variance (ANOVA) test, the significance of the trend lines is tested to compare the variance explained by the smoother against the variance explained by the linear model [@cleveland_1988]. This procedure is used in assessments at ICES and is described by @cleveland_1988.
+
+###	Change point detection
+
+For contaminant monitoring programmes such as this one, an important objective is to observe and evaluate if bans or restrictions of chemicals led to the desired goal of reducing the concentrations of contaminants in the environment. Change point detection is one method to estimate at which time point upward trends change direction and become downward trends, possibly induced by regulatory actions and restrictions. 
+The algorithm for change point detection is described in @sturludottir_2017. Briefly, two models are fitted to the data and are compared with each other. The first model allows for different slopes in two subsets of the data, whereas the second model does not allow for a change point. The change point is iteratively sought for by splitting the data in two groups, one year at a time and with a minimum of four years in each group. In each step, a likelihood-ratio test is performed and the maximum value of the test statistics is compared to critical values. This method is presented by @sturludottir_2017. The null hypothesis is that no change-point exists.
+
+
+##	Outliers
+
+Of special concern are observations further away from the regression line than expected based on the residual variance around the line. These deviations may be caused by an atypical occurrence in the physical environment, a change in the pollution load, or errors in the sampling or analytical procedure. The procedure to detect suspected outliers in this context is described by [@hoaglin_1978]. It makes use of the leverage coefficients and the standardised residuals. The standardised residuals are tested against a $t_{0.05}$ quantile with $n-2$ degrees of freedom. When calculating the $i$:th standardised residual, the current observation is left out, implying that the $i$:th observation does not influence the slope or the variance around the regression line. The suspected outliers are merely indicated in the figures and are still included in the statistical calculations.
+
+## The power of the programme
+
+For the interpretation of time series data, it is essential to know with which statistical power temporal changes can be detected, i.e. how likely it is to reveal true changes in concentrations over time. It is crucial to know if the absence of a trend implies a stable situation in the environment or if the monitoring programme is designed too poorly to detect potential changes in concentrations over time. There are two different approaches to test this: 1) by estimating the power based on a ‘random’ between-year variation, and 2) by estimating the lowest detectable trend at a fixed power as a measure of the time series’ sensitivity. In this monitoring programme, both approaches are used. 
+
+To estimate the power based on 1), a ‘random’ between-year variation, we use the residual distance from the log-linear regression line as this line often fits current observations and can be considered an acceptable and ‘neutral’ representation of the true time series trend. However, in some cases for which a significant ‘non-linear’ trend has been detected, the log-linear regression line may not be an appropriate fit. 
+
+The power of the programme is largely dependent on the length of the time series. For most compounds the sampling and analysis are already ongoing for decades, which makes for a high power of the monitoring programme. However, the length of the time series varies depending on the site and investigated compound. In addition, one or several outliers in a time series can influence the power by increasing the estimated between-year variation. In the presented monitoring programme, suspected outliers are included, which means that the power and sensitivity might be underestimated. The underestimation is from a monitoring perspective more favourable than an overestimation of the power of the programme. It prevents us from interpreting changes in data as a true increase/decrease, which in fact are not statistically significant.
+
+Detailed information on the power and the sensitivity of specific time series are presented in the tables. Here, the power to detect an annual change of 10 % based on the number of monitored years of the entire time series, as well as the power estimated as if the slope were 10 % and the number of years were only 10, is presented based on the residual variation for the whole time series. The sensitivity of the time series is reported as the lowest detectable trend (LDT, given in percent per year) for the entire monitoring period as well as for a ten-year period, with the actual between-year variation (i.e. the coefficient of variation, CV) of the monitoring data (whole time period or 10 last years) and at a power of 80 %. Further, the years required (YRQ) to detect an annual change of 10 % with a power of 80 % is given.
+
+# Description of figures and tables
+
+## Figures of spatial variation
+
+### Mean concentration
+
+Spatial visualisation of geometric mean concentrations of contaminants in
+marine biota at the different sampling sites for the last three years.
+
+*Map*: geometric mean concentrations at individual sites visualised by filled circles. The color scale range from light blue (low concentration) to dark blue (high concentration). For localities with data collection in both spring and autumn (Ängskärsklubb and Utlängan), the circle representing spring is shifted slightly to the east. If the geometric mean concentration exceeds a threshold, the outer circle is colored red. If the threshold is expressed in a different unit than the
+concentration given in the figure, the threshold is recalculated and adjusted to be comparable with the
+presented data. The recalculation is based on the mean value (over the entire time series) for e.g. $lw$%
+lipid weight, or $dw$% dry weight in percent for each site.
+
+*Barplot*: geometric mean concentrations visualised by a barplot to allow for quantification and easy comparison between sites. Each bar has the same color as its corresponding circle.
+
+### Trends
+
+Spatial visualisation of estimated trends in  concentrations of contaminants in
+marine biota at the different sampling sites for the last ten years. For quantification of the significance of trends, see the corresponding row in the summary table.
+
+*Map*: trends at individual sites (visualised by filled circles) computed by fitting a line to the yearly average log-concentrations for the past ten years expressed as the yearly percentage. The color of the circles express the strength of the trend from dark blue (strong negative trend) over white (no trend) to dark red (strong positive trend). For localities with data collection in both spring and autumn (Ängskärsklubb and Utlängan), the circle representing the spring trend is shifted slightly to the east.
+
+*Barplot*: estimated trends (as described above, yearly percentage) visualised by a barplot to allow for quantification and easy comparison between sites. Each bar has the same color as its corresponding circle. 
+
+
+## Summary tables
+
+Statistical summary of the time trends of contaminants in marine biota for
+different sampling sites and species. Consult table captions for detailed information.
+
+## Figures of time series
+
+Time trends of measured biological variables and contaminants in marine biota for different sampling sites
+and species over the entire sampling period:
+
+*Y-axis units for contaminants*: $ww$: wet weight; $dw$: dry weight; $lw$: lipid weight.
+
+*Statistical parameters* (shown in the upper left corner and representing the log-linear trend for the entire time series): Slope:
+annual percentage change with the 95 % confidence interval in brackets, $R^2$: coefficient of
+determination; $p$: probability value, $y(YYYY)$: predicted concentration for the last sampling year
+based on the smoother line with the 95 % confidence interval in brackets).
+
+*Data*: small points represent the measured concentration in an individual or a pooled sample (i.e. one
+point equals one observation); Big circular points represents annual geometric mean values; Error bars
+(around the geometric mean) represent the 95 % confidence interval; Red crosses (on top of the
+geometric mean) indicate statistical outliers (outliers are included in the time trend analysis);
+Asterisks (just above the x-axis) indicate that at least one observation exceeds the range of the figure's y-axis and therefore not shown (observations outside of the range of the y-axis are included into the time trend analysis); Bar charts (in grey)
+indicate that all values are below the limit of quantification (LOQ); sample concentrations below the
+LOQ are included into the time trend analysis as the LOQ value divided by the square root of two.
+
+*Trend lines*: Log-linear trend line for the entire time series and/or the last 10 years. A smoother line is
+shown for the entire time series if the degree of explained variation is significantly higher compared to
+the log-linear trend for the same time period. Trend lines are only shown when significant ($p<0.05$ in
+red) or close to significant ($p<0.1$ in blue).
+
+*Threshold*: recalculated threshold (expressed in the same unit as the time series data) for substances
+where the existing recommended value is expressed in a different unit than the presented data in the
+figure. The adjustment is done based on the mean value (for the entire time series at each site) of the
+variable used for the recalculation (e.g. $lw$% lipid weight in percent, $dw$% dry weight in percent).
+
+*Green area*: indicates the concentration range below the threshold. 
+
+*Blue area*: if two different thresholds exists, the blue area indicates the area below the threshold with the lower value.
+

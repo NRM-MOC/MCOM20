@@ -1,0 +1,30 @@
+
+### Blue mussel
+
+#### Summary statistics
+
+```{r, results = "asis", echo = FALSE}
+if (file.exists("tables/{{var}}_mussel_table.csv")){
+  read_csv("tables/{{var}}_mussel_table.csv") %>%
+    kable("latex", booktabs = TRUE, escape = FALSE, align = c(rep("l", 2), rep("r", 20)),
+          caption = paste("{{var_name}} in Blue mussel.", tabcap)) %>%
+    add_header_above(c(" "=5, "Whole time period"=10, "Last 10 years"=4)) %>% 
+    kable_styling(latex_options = c("scale_down", "hold_position"))
+} else
+{
+  print(paste("tables/{{var}}_mussel_table.csv", "is missing"))
+  
+}
+```
+
+
+#### Station time-series
+
+```{r, fig.width = 4, out.width = "0.33\\textwidth", fig.asp= 1.3, echo = FALSE}
+plot_files <- dir("figs/") %>% 
+  subset(., str_detect(., "MYTI_{{var}}.pdf")) %>% 
+  order_figs() %>% 
+  paste0("figs/", .) %>% 
+  subset(., file.exists(.))
+knitr::include_graphics(plot_files)
+```

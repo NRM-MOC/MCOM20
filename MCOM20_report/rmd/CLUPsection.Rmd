@@ -1,0 +1,65 @@
+
+### Herring
+
+
+```{r, eval={{maps}}, results='asis'}
+cat("#### Spatial distribution
+    ")
+```
+
+
+```{r, echo = FALSE}
+conc <- ifelse("{{var}}" %in% c("ALDR", "TOTL", "TOTV", "FPRC", "KOND"), "", "concentration of")
+```
+
+
+```{r, echo = FALSE, fig.cap=paste("Geometric mean for", conc, "{{var_name}}, 2017-2019."), eval={{maps}}}
+if (file.exists("figs/{{var}}_mean_map.pdf")){
+  knitr::include_graphics("figs/{{var}}_mean_map.pdf")
+} else
+{
+  print(paste("figs/{{var}}_mean_map.pdf", "is missing"))
+}
+```
+
+
+```{r, echo = FALSE, fig.cap=paste("Fitted trend for", conc, "{{var_name}}, 2010-2019."), eval={{maps}}}
+if (file.exists("figs/{{var}}_rate_map.pdf")){
+  knitr::include_graphics("figs/{{var}}_rate_map.pdf")
+} 
+# else
+# {
+#   print(paste("figs/{{var}}_rate_map.pdf", "is missing"))
+# }
+```
+
+
+#### Summary statistics
+
+```{r, results = "asis", echo = FALSE}
+if (file.exists("tables/{{var}}_herring_table.csv")){
+  read_csv("tables/{{var}}_herring_table.csv") %>%
+    kable("latex", booktabs = TRUE, escape = FALSE, align = c(rep("l", 2), rep("r", 20)),
+          caption = paste("{{var_name}} in Herring.", tabcap)) %>%
+    add_header_above(c(" "=5, "Whole time period"=10, "Last 10 years"=4)) %>% 
+    kable_styling(latex_options = c("scale_down", "hold_position"))
+} else
+{
+  print(paste("tables/{{var}}_herring_table.csv", "is missing"))
+  
+}
+```
+
+
+#### Station time-series
+
+```{r, fig.width = 4, out.width = "0.33\\textwidth", fig.asp= 1.3, echo = FALSE}
+plot_files <- dir("figs/") %>% 
+  subset(., str_detect(., "CLUP_{{var}}.pdf")) %>% 
+  order_figs() %>% 
+  paste0("figs/", .) %>% 
+  subset(., file.exists(.))
+knitr::include_graphics(plot_files)
+```
+
+
